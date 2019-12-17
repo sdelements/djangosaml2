@@ -48,6 +48,7 @@ from saml2.metadata import entity_descriptor
 from saml2.ident import code, decode
 from saml2.sigver import MissingKey
 from saml2.s_utils import UnsupportedBinding
+from saml2.request import AuthnRequest
 from saml2.response import (
     StatusError, StatusAuthnFailed, SignatureError, StatusRequestDenied,
     UnsolicitedResponse, StatusNoAuthnContext,
@@ -147,26 +148,26 @@ def login(request,
 
     kwargs = {}
     # pysaml needs a string otherwise: "cannot serialize True (type bool)"
-    if getattr(conf, '_sp_force_authn'):
+    if getattr(conf, '_sp_force_authn', False):
         kwargs['force_authn'] = "true"
-    if getattr(conf, '_sp_allow_create', "false"):
-        kwargs['allow_create'] = "true"
+    if hasattr(conf, '_sp_allow_create'):
+        kwargs['allow_create'] = str(conf._sp_allow_create is True).lower()
 
     # is a embedded wayf needed?
     idps = available_idps(conf)
-    if selected_idp is None and len(idps) > 1:
-        logger.debug('A discovery process is needed')
-        return render(request, wayf_template, {
-                'available_idps': idps.items(),
-                'came_from': came_from,
-                })
-    else:
-        # is the first one, otherwise next logger message will print None
-        if not idps:
+    if selected_idp is None:
+        if len(idps) > 1:
+            logger.debug('A discovery process is needed')
+            return render(request, wayf_template, {
+                    'available_idps': idps.items(),
+                    'came_from': came_from,
+                    })
+        elif not idps:
             raise IdPConfigurationMissing(('IdP configuration is missing or '
                                            'its metadata is expired.'))
-        selected_idp = list(idps.keys())[0]
-    
+        else:
+            selected_idp = list(idps.keys())[0]
+
     # choose a binding to try first
     sign_requests = getattr(conf, '_sp_authn_requests_signed', False)
     binding = BINDING_HTTP_POST if sign_requests else BINDING_HTTP_REDIRECT
@@ -226,6 +227,9 @@ def login(request,
                 **kwargs)
             try:
                 if PY3:
+                    if isinstance(request_xml, AuthnRequest):
+                        # request_xml will be an instance of AuthnRequest if the message is not signed
+                        request_xml = str(request_xml)
                     saml_request = base64.b64encode(binary_type(request_xml, 'UTF-8')).decode('utf-8')
                 else:
                     saml_request = base64.b64encode(binary_type(request_xml))
