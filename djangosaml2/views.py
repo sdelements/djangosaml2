@@ -226,7 +226,8 @@ def login(request,
                 **kwargs)
             try:
                 if PY3:
-                    saml_request = base64.b64encode(binary_type(request_xml, 'UTF-8')).decode('utf-8')
+                    # request_xml can be an AuthnRequest or a string depending on the params
+                    saml_request = base64.b64encode(binary_type(str(request_xml), 'UTF-8')).decode('utf-8')
                 else:
                     saml_request = base64.b64encode(binary_type(request_xml))
 
