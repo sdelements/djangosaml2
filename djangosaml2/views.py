@@ -147,10 +147,10 @@ def login(request,
 
     kwargs = {}
     # pysaml needs a string otherwise: "cannot serialize True (type bool)"
-    if getattr(conf, '_sp_force_authn'):
+    if getattr(conf, '_sp_force_authn', False):
         kwargs['force_authn'] = "true"
-    if getattr(conf, '_sp_allow_create', "false"):
-        kwargs['allow_create'] = "true"
+    if hasattr(conf, '_sp_allow_create'):
+        kwargs['allow_create'] = str(conf._sp_allow_create is True).lower()
 
     # is a embedded wayf needed?
     idps = available_idps(conf)
