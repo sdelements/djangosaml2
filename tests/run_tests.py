@@ -27,4 +27,6 @@ sys.path.append(PROJECT_DIR)
 # Load models
 application = get_wsgi_application()
 
+
+management.call_command('makemigrations', 'testprofiles')
 management.call_command('test', '--verbosity=3', 'djangosaml2.tests', 'testprofiles')
