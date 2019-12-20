@@ -71,6 +71,7 @@ setup(
         'defusedxml>=0.4.1',
         'Django>=1.8',
         'pysaml2>=4.6.0',
+        'six',
         ],
     extras_require=extra,
     )
